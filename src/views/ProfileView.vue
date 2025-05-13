@@ -1,7 +1,7 @@
 <template>
   <div class="profile-page">
     <div class="profile-container">
-      <!-- Блок профиля -->
+      <!-- Профиль -->
       <div class="profile-card">
         <div class="profile-header">
           <div class="avatar">{{ userInitials }}</div>
@@ -11,7 +11,7 @@
           </div>
         </div>
 
-        <!-- Прогресс бар -->
+        <!-- Прогресс -->
         <div class="progress-container">
           <div class="progress-labels">
             <span>Опыт: {{ user.experience }} XP</span>
@@ -21,7 +21,6 @@
             <div class="progress-fill" :style="{ width: progressPercentage + '%' }"></div>
           </div>
         </div>
-
 
         <!-- Статистика -->
         <div class="stats-grid">
@@ -64,11 +63,19 @@
         </div>
       </div>
     </div>
+
+    <!-- Уведомления -->
+    <AchievementNotification ref="achievementNotifier" />
   </div>
 </template>
 
 <script>
+import AchievementNotification from '@/components/AchievementNotification.vue'
+
 export default {
+  components: {
+    AchievementNotification
+  },
   data() {
     return {
       user: {
@@ -79,11 +86,7 @@ export default {
       },
       stats: {
         completed_lessons: 0,
-        categories_completed: {
-          sqli: 0,
-          xss: 0,
-          csrf: 0
-        }
+        categories_completed: { sql: 0, xss: 0, csrf: 0 }
       },
       achievements: [],
       xpPerLevel: 1000,
@@ -93,140 +96,124 @@ export default {
   },
   async created() {
     try {
-      await this.fetchUserData();
+      await this.fetchUserData()
 
-      if (!this.user?.id) {
-        throw new Error('Не удалось получить ID пользователя');
-      }
+      if (!this.user?.id) throw new Error('Не удалось получить ID пользователя')
 
-      await this.fetchAchievements();
+      await this.fetchAchievements()
     } catch (error) {
-      console.error('Ошибка инициализации:', error);
-      this.error = error.message;
-      this.$router.replace('/login');
+      console.error('Ошибка инициализации:', error)
+      this.error = error.message
+      this.$router.replace('/login')
     } finally {
-      this.isLoading = false;
+      this.isLoading = false
     }
   },
   computed: {
     userInitials() {
-      return this.user.login
-        ? this.user.login.charAt(0).toUpperCase()
-        : '?';
+      return this.user.login ? this.user.login.charAt(0).toUpperCase() : '?'
+    },
+    calculatedLevel() {
+      return Math.floor(this.user.experience / this.xpPerLevel) + 1
+    },
+    progressPercentage() {
+      const xp = this.user.experience || 0
+      const level = this.calculatedLevel
+      const baseXP = (level - 1) * this.xpPerLevel
+      const levelXP = xp - baseXP
+      return Math.min(100, (levelXP / this.xpPerLevel) * 100)
     },
     xpToNextLevel() {
-      const currentXP = this.user.experience || 0;
-      const nextLevelXP = this.user.level * this.xpPerLevel;
-      return nextLevelXP - currentXP;
-    },
-calculatedLevel() {
-    return Math.floor(this.user.experience / this.xpPerLevel) + 1;
-  },
-  progressPercentage() {
-    const xp = this.user.experience || 0;
-    const level = this.calculatedLevel;
-    const baseXP = (level - 1) * this.xpPerLevel;
-    const levelXP = xp - baseXP;
-    const percentage = Math.min(100, (levelXP / this.xpPerLevel) * 100);
-    return percentage;
-  },
-  xpToNextLevel() {
-    const xp = this.user.experience || 0;
-    const nextLevelXP = this.calculatedLevel * this.xpPerLevel;
-    return nextLevelXP - xp;
-  }
-
+      const xp = this.user.experience || 0
+      const nextLevelXP = this.calculatedLevel * this.xpPerLevel
+      return nextLevelXP - xp
+    }
   },
   methods: {
     getTokenFromCookies() {
       const token = this.$store.state.token
-
-      if (!token) {
-        throw new Error('Токен не найден в cookies');
-      }
-
-      return token;
+      if (!token) throw new Error('Токен не найден в cookies')
+      return token
     },
 
     async fetchUserData() {
-      try {
-        const token = this.getTokenFromCookies();
+      const token = this.getTokenFromCookies()
+      const response = await fetch('http://localhost:9000/api/auth/me', {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include'
+      })
 
-        const response = await fetch('http://localhost:9000/api/auth/me', {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          },
-          credentials: 'include'
-        });
+      if (!response.ok) throw new Error(`Ошибка HTTP: ${response.status}`)
 
-        if (!response.ok) {
-          throw new Error(`Ошибка HTTP: ${response.status}`);
-        }
+      const data = await response.json()
+      if (!data?.id) throw new Error('Ответ API не содержит ID пользователя')
 
-        const data = await response.json();
+      this.user = {
+        id: data.id,
+        login: data.login || 'Аноним',
+        experience: data.experience || 0,
+        level: data.level || 1
+      }
 
-        if (!data?.id) {
-          throw new Error('Ответ API не содержит ID пользователя');
-        }
-
-        this.user = {
-          id: data.id,
-          login: data.login || 'Аноним',
-          experience: data.experience || 0,
-          level: data.level || 1
-        };
-
-        this.stats = data.stats || {
-          completed_lessons: 0,
-          categories_completed: { sqli: 0, xss: 0, csrf: 0 }
-        };
-
-      } catch (error) {
-        console.error('Ошибка загрузки данных:', error);
-        throw error;
+      this.stats = data.stats || {
+        completed_lessons: 0,
+        categories_completed: { sql: 0, xss: 0, csrf: 0 }
       }
     },
 
     async fetchAchievements() {
-      try {
-        const token = this.getTokenFromCookies();
+      const token = this.getTokenFromCookies()
+      const response = await fetch('http://localhost:9000/api/achievements.php', {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include'
+      })
 
-        const response = await fetch('http://localhost:9000/api/achievements.php', {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          },
-          credentials: 'include'
-        });
+      if (!response.ok) throw new Error(`Ошибка HTTP: ${response.status}`)
 
-        if (!response.ok) {
-          throw new Error(`Ошибка HTTP: ${response.status}`);
+      const result = await response.json()
+      if (!result.success) throw new Error(result.error || 'Не удалось получить достижения')
+
+      const newAchievements = []
+      const stored = JSON.parse(localStorage.getItem('shown_achievements') || '[]')
+
+      result.data.forEach(ach => {
+        if (ach.earned && !stored.includes(ach.id)) {
+          newAchievements.push(ach)
+          stored.push(ach.id)
         }
+      })
 
-        const result = await response.json();
-
-        if (!result.success) {
-          throw new Error(result.error || 'Не удалось получить достижения');
-        }
-
-        this.achievements = result.data || [];
-
-      } catch (error) {
-        console.error('Ошибка при загрузке достижений:', error);
+      if (newAchievements.length > 0) {
+        this.showAchievementNotifications(newAchievements)
+        localStorage.setItem('shown_achievements', JSON.stringify(stored))
       }
+
+      this.achievements = result.data
+    },
+
+    showAchievementNotifications(achievements) {
+      achievements.forEach(achievement => {
+        this.$refs.achievementNotifier?.addNotification(achievement)
+      })
     },
 
     formatDate(dateString) {
-      if (!dateString) return '';
-      const date = new Date(dateString);
-      return date.toLocaleDateString('ru-RU');
+      if (!dateString) return ''
+      const date = new Date(dateString)
+      return date.toLocaleDateString('ru-RU')
     }
   }
 }
 </script>
+
 
 
 <style scoped>
