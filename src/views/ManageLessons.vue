@@ -202,7 +202,7 @@
                 <option value="">Все типы</option>
                 <option value="code">Код</option>
                 <option value="quiz">Тест</option>
-                <option value="text">Текст</option>
+                <option value="attack_simulation">Стимуляция атаки</option>
               </select>
             </div>
           </div>
@@ -345,7 +345,7 @@ export default {
       const types = {
         code: 'Код',
         quiz: 'Тест',
-        text: 'Текст'
+        attack_simulation: 'Стимуляция атаки'
       };
       return types[type] || type;
     },

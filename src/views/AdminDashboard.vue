@@ -137,7 +137,7 @@
               <div class="form-group">
                 <label for="difficulty">Сложность</label>
                 <select id="difficulty" v-model="editedLesson.difficulty" required>
-                  <option value="easy">Легкая</option>
+                  <option value="low">Легкая</option>
                   <option value="medium">Средняя</option>
                   <option value="hard">Сложная</option>
                 </select>
@@ -243,6 +243,7 @@ export default {
     await this.fetchLessons();
   },
   methods: {
+    
     toggleSidebar() {
       this.isSidebarCollapsed = !this.isSidebarCollapsed;
     },
@@ -258,7 +259,7 @@ export default {
     },
     getDifficultyText(difficulty) {
       const difficulties = {
-        easy: 'Легкая',
+        low: 'Легкая',
         medium: 'Средняя',
         hard: 'Сложная'
       };

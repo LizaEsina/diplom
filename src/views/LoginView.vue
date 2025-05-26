@@ -1,37 +1,40 @@
 <template>
   <div class="login-page">
-    <div class="login-container">
-      <h1>Вход в SecureLearn</h1>
+    <div class="login-card">
+      <h2 class="title">Добро пожаловать в <span>SecureLearn</span></h2>
       <form @submit.prevent="handleLogin" class="login-form">
-        <div class="form-group">
+        <div class="form-field">
           <label for="login">Логин</label>
-          <input 
-            type="text" 
-            id="login" 
-            v-model="form.login" 
+          <input
+            type="text"
+            id="login"
+            v-model="form.login"
+            placeholder="Введите логин"
             required
-          >
+          />
         </div>
-        
-        <div class="form-group">
+
+        <div class="form-field">
           <label for="password">Пароль</label>
-          <input 
-            type="password" 
-            id="password" 
-            v-model="form.password" 
+          <input
+            type="password"
+            id="password"
+            v-model="form.password"
+            placeholder="Введите пароль"
             required
-          >
+          />
         </div>
-        
-        <button type="submit" :disabled="loading" class="submit-btn">
+
+        <button type="submit" :disabled="loading" class="login-button">
           {{ loading ? 'Вход...' : 'Войти' }}
         </button>
-        
-        <div v-if="error" class="error-message">{{ error }}</div>
+
+        <p v-if="error" class="error">{{ error }}</p>
       </form>
-      
-      <p class="register-link">
-        Нет аккаунта? <router-link to="/register">Зарегистрируйтесь</router-link>
+
+      <p class="register-text">
+        Нет аккаунта?
+        <router-link to="/register">Зарегистрируйтесь</router-link>
       </p>
     </div>
   </div>
@@ -43,126 +46,154 @@ export default {
     return {
       form: {
         login: '',
-        password: ''
+        password: '',
       },
       loading: false,
-      error: ''
-    }
+      error: '',
+    };
   },
   methods: {
     async handleLogin() {
-  try {
-    const response = await fetch('http://localhost:9000/api/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(this.form),
-      credentials: 'include'
-    })
+      this.error = '';
+      this.loading = true;
 
-    if (!response.ok) throw new Error('Ошибка авторизации')
+      try {
+        const response = await fetch('http://localhost:9000/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(this.form),
+          credentials: 'include',
+        });
 
-    const data = await response.json()
-    this.$store.commit('SET_TOKEN', data.token)
-    
-    // Обработка redirect параметра
-    const redirectPath = this.$route.query.redirect || '/profile'
-    this.$router.push(redirectPath).catch(() => this.$router.push('/'))
-    
-  } catch (error) {
-    console.error('Login error:', error)
-    this.error = error.message
-  }
-}
-}
-}
+        if (!response.ok) throw new Error('Неверный логин или пароль');
+
+        const data = await response.json();
+        this.$store.commit('SET_TOKEN', data.token);
+
+        const redirectPath = this.$route.query.redirect || '/profile';
+        this.$router.push(redirectPath).catch(() => this.$router.push('/'));
+      } catch (error) {
+        this.error = error.message;
+      } finally {
+        this.loading = false;
+      }
+    },
+  },
+};
 </script>
 
 <style scoped>
 .login-page {
   min-height: 100vh;
   display: flex;
-  align-items: center;
   justify-content: center;
-  background: #f7fafc;
+  align-items: center;
+  background: linear-gradient(135deg, #93abef5e, #03236dd4);
+  padding: 1rem;
 }
 
-.login-container {
+.login-card {
   background: white;
-  padding: 2rem;
-  border-radius: 8px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  padding: 2.5rem 2rem;
+  border-radius: 1.25rem;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
   width: 100%;
   max-width: 400px;
+  animation: fadeIn 0.5s ease;
 }
 
-h1 {
+.title {
+  font-size: 1.75rem;
   text-align: center;
-  color: #2d3748;
-  margin-bottom: 1.5rem;
+  margin-bottom: 2rem;
+  color: #1e293b;
 }
 
-.form-group {
-  margin-bottom: 1rem;
+.title span {
+  color: #0ea5e9;
+}
+
+.form-field {
+  margin-bottom: 1.25rem;
 }
 
 label {
   display: block;
   margin-bottom: 0.5rem;
-  color: #4a5568;
+  color: #475569;
+  font-weight: 500;
 }
 
 input {
-  width: 100%;
+  width: 95%;
   padding: 0.75rem;
   border: 1px solid #e2e8f0;
-  border-radius: 4px;
-  transition: border-color 0.3s;
+  border-radius: 0.5rem;
+  transition: all 0.2s;
+  font-size: 1rem;
+  background: #f9fafb;
 }
 
 input:focus {
+  border-color: #0ea5e9;
   outline: none;
-  border-color: #4299e1;
+  background: white;
 }
 
-.submit-btn {
+.login-button {
   width: 100%;
   padding: 0.75rem;
-  background: #4299e1;
+  background: #0ea5e9;
   color: white;
   border: none;
-  border-radius: 4px;
-  font-weight: 500;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  font-weight: 600;
   cursor: pointer;
-  transition: background 0.3s;
+  transition: background 0.2s ease;
 }
 
-.submit-btn:hover {
-  background: #3182ce;
+.login-button:hover {
+  background: #0284c7;
 }
 
-.submit-btn:disabled {
-  background: #a0aec0;
+.login-button:disabled {
+  background: #94a3b8;
   cursor: not-allowed;
 }
 
-.error-message {
-  color: #e53e3e;
+.error {
+  color: #dc2626;
   margin-top: 1rem;
   text-align: center;
+  font-weight: 500;
 }
 
-.register-link {
+.register-text {
   text-align: center;
-  margin-top: 1rem;
-  color: #4a5568;
+  margin-top: 2rem;
+  color: #64748b;
 }
 
-.register-link a {
-  color: #4299e1;
+.register-text a {
+  color: #0ea5e9;
+  font-weight: 500;
   text-decoration: none;
 }
 
-.register-link a:hover {
+.register-text a:hover {
   text-decoration: underline;
 }
+
+@keyframes fadeIn {
+  from {
+    transform: translateY(10px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0px);
+    opacity: 1;
+  }
+}
 </style>
+

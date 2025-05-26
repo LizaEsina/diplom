@@ -123,7 +123,7 @@
                 <option disabled value="">Выберите тип</option>
                 <option value="code">Код</option>
                 <option value="quiz">Тест</option>
-                <option value="text">Текстовый ответ</option>
+                <option value="attack_simulation">Стимуляция атаки</option>
               </select>
             </div>
 
@@ -136,7 +136,7 @@
                 class="styled-select"
               >
                 <option disabled value="">Выберите сложность</option>
-                <option value="easy">Легкая</option>
+                <option value="low">Легкая</option>
                 <option value="medium">Средняя</option>
                 <option value="hard">Сложная</option>
               </select>
